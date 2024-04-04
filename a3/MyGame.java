@@ -68,6 +68,8 @@ public class MyGame extends VariableFrameRateGame
 	private NodeController rc;
 	private NodeController tcSphere, tcCube, tcTorus, tcPlane;
 	
+	private int fluffyClouds;
+	
 	public MyGame() { super(); } // end MyGame
 
 	public static void main(String[] args)
@@ -137,6 +139,13 @@ public class MyGame extends VariableFrameRateGame
 		// gound texture
 		groundTx = new TextureImage("rippled_sand.jpg");
 	} // end loadTextures
+	
+	@Override
+	public void loadSkyBoxes()
+	{	fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds");
+		(engine.getSceneGraph()).setActiveSkyBoxTexture(fluffyClouds);
+		(engine.getSceneGraph()).setSkyBoxEnabled(true);
+	} // end loadSkyBoxes
 
 	@Override
 	public void buildObjects()
@@ -282,7 +291,7 @@ public class MyGame extends VariableFrameRateGame
 		
 		rightCamera.setLocation(new Vector3f(0, 2, 0));
 		rightCamera.setU(new Vector3f(1, 0, 0));
-		rightCamera.setV(new Vector3f(0, 0, 1));
+		rightCamera.setV(new Vector3f(0, 0, -1));
 		rightCamera.setN(new Vector3f(0, -2, 0));
 	} // end createViewports
 		

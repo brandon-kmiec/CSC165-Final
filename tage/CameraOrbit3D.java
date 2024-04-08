@@ -7,12 +7,12 @@ import tage.input.action.AbstractInputAction;
 import tage.input.InputManager;
 
 /**
-* 3rd person orbit controller.
+* 3rd person camera orbit controller.
 * orbit the camera wihtout adjusting the avatar's heading.
 * adjust camera elevation angle.
 * move and turn the avatar while maintaining the camera's relative position to the avatar. 
 */
-public class CameraOrbitController {
+public class CameraOrbit3D {
 	private Engine engine;
 	private Camera camera;			// the camera being controlled
 	private GameObject avatar;		// the target avatar the camera looks at
@@ -23,7 +23,7 @@ public class CameraOrbitController {
 	/**
 	*	Create an orbit controller with camera, avatar, gamepad name, and engine as specified.
 	*/
-	public CameraOrbitController(Camera cam, GameObject av, String gpName, Engine e) {
+	public CameraOrbit3D(Camera cam, GameObject av, String gpName, Engine e) {
 		engine = e;
 		camera = cam;
 		avatar = av;
@@ -32,7 +32,7 @@ public class CameraOrbitController {
 		cameraRadius = 4.0f;		// distance from camera to avatar
 		setupInputs(gpName);
 		updateCameraPosition();
-	} // end CameraOrbitController Constructor
+	} // end CameraOrbit3D Constructor
 	
 	/**	Associate keyboard and controller inputs with the inputmanager */
 	private void setupInputs(String gp) {
@@ -171,4 +171,4 @@ public class CameraOrbitController {
 		} // end performAction
 	} // end OrbitElevationAction Class
 	
-} // end CameraOrbitController Class
+} // end CameraOrbit3D Class

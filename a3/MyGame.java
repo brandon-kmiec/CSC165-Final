@@ -61,7 +61,7 @@ public class MyGame extends VariableFrameRateGame
 	
 	private InputManager im;
 	
-	private CameraOrbitController orbitController;
+	private CameraOrbit3D orbitController;
 	
 	private Viewport leftVp, rightVp;
 	
@@ -324,7 +324,11 @@ public class MyGame extends VariableFrameRateGame
 		//(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
 		String gpName = im.getFirstGamepadName();
 		cam = engine.getRenderSystem().getViewport("LEFT").getCamera();
-		orbitController = new CameraOrbitController(leftCamera, avatar, gpName, engine);
+		
+		if(gpName == null)
+			gpName = im.getKeyboardName();
+		
+		orbitController = new CameraOrbit3D(leftCamera, avatar, gpName, engine);
 		
 		// ---------------- input manager actions ----------------
 		// IAction actions

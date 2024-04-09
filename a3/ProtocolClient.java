@@ -108,7 +108,7 @@ public class ProtocolClient extends GameConnectionClient {
 	public void sendDetailsForMessage(UUID remId, Vector3f pos) {
 		// format: (dsfr, localId, x,y,z)
 		try {
-			String message = new String("dsfr," + id.toString());
+			String message = new String("dsfr," + remId.toString() + "," + id.toString());
 			message += "," + pos.x() + "," + pos.y() + "," + pos.z();
 			sendPacket(message);
 		} catch(IOException e) {

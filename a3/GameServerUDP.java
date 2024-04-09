@@ -72,12 +72,12 @@ public class GameServerUDP extends GameConnectionServer<UUID> {
 		// format: join,success or join,failure
 		try {
 			System.out.println("trying to confirm join");
-			String message = new String("join");
+			String message = new String("join,");
 			if(success) {
-				message += ",success";
+				message += "success";
 			} // end if
 			else {
-				message += ",failure";
+				message += "failure";
 			} // end else
 			sendPacket(message, clientID);
 		} catch(IOException e) {

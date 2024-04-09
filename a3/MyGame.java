@@ -5,6 +5,7 @@ import tage.shapes.*;
 import tage.input.*;
 import tage.input.action.*;
 import tage.nodeControllers.*;
+import tage.networking.IGameConnection.ProtocolType;
 
 import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
@@ -13,6 +14,8 @@ import java.lang.Math;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import javax.swing.*;
 import org.joml.*;
 
@@ -70,18 +73,36 @@ public class MyGame extends VariableFrameRateGame
 	
 	private int fluffyClouds;
 	
-	public MyGame() { super(); } // end MyGame
+	private GhostManager gm;
+	private String serverAddress;
+	private int serverPort;
+	private ProtocolType serverProtocol;
+	private ProtocolClient protClient;
+	private boolean isClientConnected = false;
+	
+	private ObjShape ghostS;
+	private TextureImage ghostT;
+	
+	public MyGame(String serverAddress, int serverPort, String protocol) {
+		super(); 
+		gm = new GhostManager(this);
+		this.serverAddress = serverAddress;
+		this.serverPort = serverPort;
+		if(protocol.toUpperCase().compareTo("TCP") == 0)
+			this.serverProtocol = ProtocolType.TCP;
+		else
+			this.serverProtocol = ProtocolType.UDP;
+	} // end MyGame
 
-	public static void main(String[] args)
-	{	MyGame game = new MyGame();
+	public static void main(String[] args) {
+		MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2]);
 		engine = new Engine(game);
 		game.initializeSystem();
 		game.game_loop();
 	} // end main
 
 	@Override
-	public void loadShapes()
-	{
+	public void loadShapes() {
 		// load dolphin shape
 		dolS = new ImportedModel("dolphinHighPoly.obj");
 		
@@ -110,11 +131,12 @@ public class MyGame extends VariableFrameRateGame
 		
 		// load groundPlane shape
 		groundPlane = new Plane();
+		
+		ghostS = new ImportedModel("dolphinHighPoly.obj");
 	} // end loadShapes
 
 	@Override
-	public void loadTextures()
-	{
+	public void loadTextures() {
 		// dolphin texture
 		doltx = new TextureImage("Dolphin_HighPolyUV.png");
 	
@@ -138,18 +160,20 @@ public class MyGame extends VariableFrameRateGame
 		
 		// gound texture
 		groundTx = new TextureImage("rippled_sand.jpg");
+		
+		ghostT = new TextureImage("silver.png");
 	} // end loadTextures
 	
 	@Override
-	public void loadSkyBoxes()
-	{	fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds");
+	public void loadSkyBoxes() {
+		fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds");
 		(engine.getSceneGraph()).setActiveSkyBoxTexture(fluffyClouds);
 		(engine.getSceneGraph()).setSkyBoxEnabled(true);
 	} // end loadSkyBoxes
 
 	@Override
-	public void buildObjects()
-	{	Matrix4f initialTranslation, initialScale, initialRotation;
+	public void buildObjects() {	
+		Matrix4f initialTranslation, initialScale, initialRotation;
 
 		// build dolphin in the center of the window
 		avatar = new GameObject(GameObject.root(), dolS, doltx);
@@ -270,8 +294,8 @@ public class MyGame extends VariableFrameRateGame
 	} // end buildObjects
 
 	@Override
-	public void createViewports()
-	{	(engine.getRenderSystem()).addViewport("LEFT", 0, 0, 1f, 1f);
+	public void createViewports() {	
+		(engine.getRenderSystem()).addViewport("LEFT", 0, 0, 1f, 1f);
 		(engine.getRenderSystem()).addViewport("RIGHT", 0.75f, 0, 0.25f, 0.25f);
 		
 		leftVp = (engine.getRenderSystem()).getViewport("LEFT");
@@ -296,8 +320,8 @@ public class MyGame extends VariableFrameRateGame
 	} // end createViewports
 		
 	@Override
-	public void initializeLights()
-	{	Light.setGlobalAmbient(0.75f, 0.75f, 0.75f);
+	public void initializeLights() {
+		Light.setGlobalAmbient(0.75f, 0.75f, 0.75f);
 		light1 = new Light();
 		light1.setLocation(new Vector3f(5.0f, 4.0f, 2.0f));
 		(engine.getSceneGraph()).addLight(light1);
@@ -310,8 +334,10 @@ public class MyGame extends VariableFrameRateGame
 	} // end initializeLights
 
 	@Override
-	public void initializeGame()
-	{	lastFrameTime = System.currentTimeMillis();
+	public void initializeGame() {	
+		setupNetworking();
+
+		lastFrameTime = System.currentTimeMillis();
 		currFrameTime = System.currentTimeMillis();
 		elapsTime = 0.0;
 		timeElapsed = 0.0;
@@ -332,7 +358,7 @@ public class MyGame extends VariableFrameRateGame
 		
 		// ---------------- input manager actions ----------------
 		// IAction actions
-		FwdAction fwdAction = new FwdAction(this);
+		FwdAction fwdAction = new FwdAction(this, protClient);
 		TurnAction turnAction = new TurnAction(this);
 		BttnAction bttnAction = new BttnAction(this);
 		RvpMoveAction rvpMoveAction = new RvpMoveAction(this);
@@ -392,10 +418,31 @@ public class MyGame extends VariableFrameRateGame
 		
 		rc.enable();
 	} // end initializeGame
+	
+	private void setupNetworking() {
+		isClientConnected = false;
+		try {
+			protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort,
+										   serverProtocol, this);
+		} catch(UnknownHostException e) {
+			e.printStackTrace();
+		} catch(IOException e) {
+			e.printStackTrace();
+		} // end try catch
+		
+		if(protClient == null) {
+			System.out.println("missing protocol host");
+		} // end if
+		else {
+			// ask client protocol to send initial join message
+			// to server, with a unique identifier for this client
+			System.out.println("sending join message to protocol host");
+			protClient.sendJoinMessage();
+		} // end else
+	} // end setupNetworking
 
 	@Override
-	public void update()
-	{	
+	public void update() {	
 		// change elapsTime based on if powerUp has been activated or not
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
@@ -445,7 +492,15 @@ public class MyGame extends VariableFrameRateGame
 		cam.setLocation(loc.add(up.mul(1.3f)).add(fwd.mul(-2.5f)));
 		
 		orbitController.updateCameraPosition();
+		
+		processNetworking((float)elapsTime);
 	} // end update
+	
+	protected void processNetworking(float elapsTime) {
+		// process packets received by the client from the server
+		if(protClient != null)
+			protClient.processPackets();
+	} // end processNetworking
 	
 	private void checkDolDistance() {
 		// get the distance between the dolphin and the camera.  Stop the dolphin if the distance if >10.0f, allow to move if
@@ -603,10 +658,39 @@ public class MyGame extends VariableFrameRateGame
 		cam.setLocation(loc.add(up.mul(0.5f)).add(fwd.mul(-0.5f)).add(right.mul(1.0f)));
 	} // end disconnectDolCam
 	
-	// return the avatar (dolphin)
+	// return the avatar
 	public GameObject getAvatar() {
 		return avatar;
 	} // end getAvatar
+	
+	// return the ghost shape
+	public ObjShape getGhostShape() {
+		return ghostS;
+	} // end getGhostShape
+	
+	// return the ghost texture
+	public TextureImage getGhostTexture() {
+		return ghostT;
+	} // end getGhostTexture
+	
+	// return the ghost manager
+	public GhostManager getGhostManager() {
+		return gm;
+	} // end getGhostManager
+	
+	// return the engine
+	public Engine getEngine() {
+		return engine;
+	} // end getEngine
+	
+	public void setIsConnected(boolean isConnected) {
+		this.isClientConnected = isConnected;
+	} // end setIsConnected
+	
+	// return the player position
+	public Vector3f getPlayerPosition() {
+		return avatar.getWorldLocation();
+	} // end getPlayerPosition
 	
 	// return value of stopDol
 	public boolean getStopDol() {
@@ -626,4 +710,15 @@ public class MyGame extends VariableFrameRateGame
 	public Camera getRightVpCam() {
 		return engine.getRenderSystem().getViewport("RIGHT").getCamera();
 	} // end getRightVpCam
+
+
+	private class SendCloseConnectionPacketAction extends AbstractInputAction {
+		// for leaving the game... need to attach to an input device
+		@Override
+		public void performAction(float time, net.java.games.input.Event evt) {
+			if(protClient != null && isClientConnected == true) {
+				protClient.sendByeMessage();
+			} // end if
+		} // end performAction
+	} // end SendCloseConnectionPacketAction class
 } // end MyGame

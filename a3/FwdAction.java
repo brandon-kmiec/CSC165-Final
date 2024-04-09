@@ -15,10 +15,12 @@ public class FwdAction extends AbstractInputAction {
 	private Vector3f fwdDirection;
 	private Camera rvpCam;
 	private float xinc, zinc;
+	private ProtocolClient protClient;
 	
 	/**	creates a FwdAction with MyGame as specified */
-	public FwdAction(MyGame g) {
+	public FwdAction(MyGame g, ProtocolClient p) {
 		game = g;
+		protClient = p;
 		rvpCam = game.getRightVpCam();
 		xinc = 0;
 		zinc = 0;
@@ -53,6 +55,7 @@ public class FwdAction extends AbstractInputAction {
 			} // end else if 
 		
 			av.setLocalLocation(newPosition);
+			protClient.sendMoveMessage(av.getWorldLocation());
 		} // end if
 		
 	} // end performAction

@@ -72,11 +72,11 @@ public class RvpMoveAction extends AbstractInputAction {
 		else {
 			if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.T) {	// move forward
 				xinc = 0f;
-				zinc = 0.1f;
+				zinc = -0.1f;
 			} // end if
 			else if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.G) {	// move backward
 				xinc = 0f;
-				zinc = -0.1f;
+				zinc = 0.1f;
 			} // end else if
 			else if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.F) {	// move left
 				xinc = -0.1f;

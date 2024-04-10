@@ -54,7 +54,7 @@ public class MyGame extends VariableFrameRateGame
 	private TextureImage doltx, sphereTx, cubeTx, torusTx, planeTx;
 	private TextureImage octBinTX, spherePcTx, cubePcTx, torusPcTx, planePcTx;
 	private TextureImage powerUpTx;
-	private TextureImage groundTx;
+	private TextureImage groundTx, groundHM;
 	
 	private Light light1, light2;
 	
@@ -130,7 +130,7 @@ public class MyGame extends VariableFrameRateGame
 		powerUpS = new Sphere();
 		
 		// load groundPlane shape
-		groundPlane = new Plane();
+		groundPlane = new TerrainPlane(1000);	// pixels per axis = 1000x1000
 		
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
 	} // end loadShapes
@@ -160,6 +160,7 @@ public class MyGame extends VariableFrameRateGame
 		
 		// gound texture
 		groundTx = new TextureImage("rippled_sand.jpg");
+		groundHM = new TextureImage("ground_height_map.png");
 		
 		ghostT = new TextureImage("silver.png");
 	} // end loadTextures
@@ -290,7 +291,10 @@ public class MyGame extends VariableFrameRateGame
 		ground.setLocalTranslation(initialTranslation);
 		ground.setLocalScale(initialScale);
 		//ground.setLocalRotation(initialRotation);
+		ground.setHeightMap(groundHM);
+		
 		ground.getRenderStates().setTiling(1);
+		//ground.getRenderStates().setTileFactor(10);
 	} // end buildObjects
 
 	@Override
@@ -490,6 +494,11 @@ public class MyGame extends VariableFrameRateGame
 		cam.setV(up);
 		cam.setN(fwd);
 		cam.setLocation(loc.add(up.mul(1.3f)).add(fwd.mul(-2.5f)));
+		
+		// update altitude of avatar based on height map
+		Vector3f tempLoc = avatar.getWorldLocation();
+		float height = ground.getHeight(tempLoc.x(), tempLoc.z());
+		avatar.setLocalLocation(new Vector3f(tempLoc.x(), height, tempLoc.z()));
 		
 		orbitController.updateCameraPosition();
 		

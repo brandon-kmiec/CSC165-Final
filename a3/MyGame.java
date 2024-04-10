@@ -286,7 +286,7 @@ public class MyGame extends VariableFrameRateGame
 		// build ground
 		ground = new GameObject(GameObject.root(), groundPlane, groundTx);
 		initialTranslation = (new Matrix4f()).translation(0, -1, 0);
-		initialScale = (new Matrix4f()).scaling(50.0f);
+		initialScale = (new Matrix4f()).scaling(50.0f, 5.0f, 50.0f);
 		//initialRotation = (new Matrix4f()).rotation((float)Math.toRadians(90), 0, 0, 0);
 		ground.setLocalTranslation(initialTranslation);
 		ground.setLocalScale(initialScale);

@@ -40,18 +40,21 @@ public class MyGame extends VariableFrameRateGame
 	private Vector3f localPitch, globalYaw;
 
 	private GameObject avatar, sphere, cube, torus, plane; 
+	private GameObject cone;
 	private GameObject xLine, yLine, zLine; 
 	private GameObject octBin, spherePc, cubePc, torusPc, planePc;
 	private GameObject powerUp;
 	private GameObject ground;
 	
 	private ObjShape avatarS, sphereShape, cubeShape, torusShape, planeShape;
+	private ObjShape coneS;
 	private ObjShape xLineS, yLineS, zLineS;
 	private ObjShape octBinS, spherePcS, cubePcS, torusPcS, planePcS;
 	private ObjShape powerUpS;
 	private ObjShape groundPlane;
 	
 	private TextureImage avatarTx, sphereTx, cubeTx, torusTx, planeTx;
+	private TextureImage coneTx;
 	private TextureImage octBinTX, spherePcTx, cubePcTx, torusPcTx, planePcTx;
 	private TextureImage powerUpTx;
 	private TextureImage groundTx, groundHM;
@@ -133,6 +136,8 @@ public class MyGame extends VariableFrameRateGame
 		groundPlane = new TerrainPlane(1000);	// pixels per axis = 1000x1000
 		
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
+		
+		coneS = new ImportedModel("cone.obj");
 	} // end loadShapes
 
 	@Override
@@ -163,6 +168,8 @@ public class MyGame extends VariableFrameRateGame
 		groundHM = new TextureImage("ground_height_map.png");
 		
 		ghostT = new TextureImage("silver.png");
+		
+		coneTx = new TextureImage("Cone.png");
 	} // end loadTextures
 	
 	@Override
@@ -179,7 +186,7 @@ public class MyGame extends VariableFrameRateGame
 		// build dolphin in the center of the window
 		avatar = new GameObject(GameObject.root(), avatarS, avatarTx);
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
-		initialScale = (new Matrix4f()).scaling(3.0f);
+		initialScale = (new Matrix4f()).scaling(1.0f);
 		avatar.setLocalTranslation(initialTranslation);
 		avatar.setLocalScale(initialScale);
 		
@@ -295,6 +302,11 @@ public class MyGame extends VariableFrameRateGame
 		
 		ground.getRenderStates().setTiling(1);
 		//ground.getRenderStates().setTileFactor(10);
+		
+		// build cone
+		cone = new GameObject(GameObject.root(), coneS, coneTx);
+		initialTranslation = (new Matrix4f()).translation(-2, -1, -2);
+		cone.setLocalTranslation(initialTranslation);
 	} // end buildObjects
 
 	@Override

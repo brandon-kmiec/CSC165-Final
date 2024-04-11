@@ -45,13 +45,13 @@ public class MyGame extends VariableFrameRateGame
 	private GameObject powerUp;
 	private GameObject ground;
 	
-	private ObjShape dolS, sphereShape, cubeShape, torusShape, planeShape;
+	private ObjShape avatarS, sphereShape, cubeShape, torusShape, planeShape;
 	private ObjShape xLineS, yLineS, zLineS;
 	private ObjShape octBinS, spherePcS, cubePcS, torusPcS, planePcS;
 	private ObjShape powerUpS;
 	private ObjShape groundPlane;
 	
-	private TextureImage doltx, sphereTx, cubeTx, torusTx, planeTx;
+	private TextureImage avatarTx, sphereTx, cubeTx, torusTx, planeTx;
 	private TextureImage octBinTX, spherePcTx, cubePcTx, torusPcTx, planePcTx;
 	private TextureImage powerUpTx;
 	private TextureImage groundTx, groundHM;
@@ -104,7 +104,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes() {
 		// load dolphin shape
-		dolS = new ImportedModel("dolphinHighPoly.obj");
+		avatarS = new ImportedModel("CustomCar.obj");
 		
 		// load visit objects shapes
 		cubeShape = new Cube();
@@ -138,7 +138,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadTextures() {
 		// dolphin texture
-		doltx = new TextureImage("Dolphin_HighPolyUV.png");
+		avatarTx = new TextureImage("CustomCarUV_wrap.png");
 	
 		// visit objects textures
 		cubeTx = new TextureImage("medieval-brick-wall.jpg");
@@ -177,7 +177,7 @@ public class MyGame extends VariableFrameRateGame
 		Matrix4f initialTranslation, initialScale, initialRotation;
 
 		// build dolphin in the center of the window
-		avatar = new GameObject(GameObject.root(), dolS, doltx);
+		avatar = new GameObject(GameObject.root(), avatarS, avatarTx);
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
 		initialScale = (new Matrix4f()).scaling(3.0f);
 		avatar.setLocalTranslation(initialTranslation);

@@ -78,9 +78,10 @@ public class CameraOrbit3D {
 		float x = cameraRadius * (float)(Math.cos(phi) * Math.sin(theta));
 		float y = cameraRadius * (float)(Math.sin(phi));
 		float z = cameraRadius * (float)(Math.cos(phi) * Math.cos(theta));
-				
-		if(y < -1.0f)
-			y = -0.5f;
+
+		if(y < 0.0f)
+			y = 0.0f;
+			
 		camera.setLocation(new Vector3f(x, y, z).add(avatar.getWorldLocation()));
 		camera.lookAt(avatar);
 	} // end updateCameraPosition
@@ -93,10 +94,10 @@ public class CameraOrbit3D {
 			float rotAmount;
 		
 			if(event.getValue() < -0.2 || event.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.J)
-				rotAmount = -0.2f;
+				rotAmount = -0.4f;
 			else
 				if(event.getValue() > 0.2 || event.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.L)
-					rotAmount = 0.2f;
+					rotAmount = 0.4f;
 				else
 					rotAmount = 0.0f;
 			
@@ -151,18 +152,18 @@ public class CameraOrbit3D {
 			*/
 			
 			if(event.getValue() < -0.2 || event.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.I)
-				rotAmount = 0.2f;
+				rotAmount = 0.4f;
 			else
 				if(event.getValue() > 0.2 || event.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.K)
-					rotAmount = -0.2f;
+					rotAmount = -0.4f;
 				else
 					rotAmount = 0.0f;
 			
 			cameraElevation += rotAmount;
 			cameraElevation = cameraElevation % 360;
 
-			if(cameraElevation < -14.0f)
-				cameraElevation = -14.0f;
+			if(cameraElevation < 0.0f)
+				cameraElevation = 0.0f;
 			
 			if(cameraElevation > 89.9f)
 				cameraElevation = 89.9f;

@@ -2,6 +2,7 @@ package a3;
 
 import tage.*;
 import tage.input.action.AbstractInputAction;
+import tage.physics.PhysicsObject;
 import net.java.games.input.Event;
 import org.joml.*;
 
@@ -13,9 +14,11 @@ public class FwdAction extends AbstractInputAction {
 	private GameObject av;
 	private Vector3f oldPosition, newPosition;
 	private Vector3f fwdDirection;
+	private Vector3f bkwDirection;
 	private Camera rvpCam;
 	private float xinc, zinc;
 	private ProtocolClient protClient;
+	private PhysicsObject po;
 	
 	/**	creates a FwdAction with MyGame as specified */
 	public FwdAction(MyGame g, ProtocolClient p) {
@@ -24,6 +27,8 @@ public class FwdAction extends AbstractInputAction {
 		rvpCam = game.getRightVpCam();
 		xinc = 0;
 		zinc = 0;
+		
+		po = game.getAvatar().getPhysicsObject();
 	} // end FwdAction Constructor
 	
 	/**	move the avatar based on Event */
@@ -42,19 +47,59 @@ public class FwdAction extends AbstractInputAction {
 			oldPosition = av.getWorldLocation();
 			fwdDirection = av.getWorldForwardVector();
 			
+			bkwDirection = av.getWorldForwardVector();
+			bkwDirection.mul(-1);
+			System.out.println(fwdDirection.toString() + "\n" + bkwDirection.toString());
+			
+			float x = 0, y = 0, z = 0;
+			
 			// detect which component is being activated and modify newPosition accordingly
-			if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.W)
+			if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.W) {
+				//game.applyForce(fwdDirection.x() + 10, fwdDirection.y() + 10, fwdDirection.z() + 10);
 				newPosition = oldPosition.add(fwdDirection.mul(time));
-			else if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.S)
+				
+				x = (fwdDirection.x()) * time * 1000;
+				y = (fwdDirection.y()) * time * 1000;
+				z = (fwdDirection.z()) * time * 1000;
+				System.out.println(x + " " + y + " " + z);
+			} // end if
+			else if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.S) {
+				//fwdDirection = av.getWorldForwardVector() * -1;
+				
 				newPosition = oldPosition.add(fwdDirection.mul(-time));
+				
+				x = (bkwDirection.x()) * time * 10;
+				y = (bkwDirection.y()) * time * 10;
+				z = (bkwDirection.z()) * time * 10;
+
+				System.out.println(x + " " + y + " " + z);
+			} // end else ify
 			else if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Axis.Y) {
-				if(keyValue > 0)
+				if(keyValue > 0) {
 					newPosition = oldPosition.add(fwdDirection.mul(-time));
-				else if(keyValue < 0)
+					
+					x = (fwdDirection.x()) * time * -1000;
+					y = (fwdDirection.y()) * time * -1000;
+					z = (fwdDirection.z()) * time * -1000;
+					System.out.println(x + " " + y + " " + z);
+				} // end if
+				else if(keyValue < 0) {
 					newPosition = oldPosition.add(fwdDirection.mul(time));
+					
+					x = (fwdDirection.x()) * time * 1000;
+					y = (fwdDirection.y()) * time * 1000;
+					z = (fwdDirection.z()) * time * 1000;
+					System.out.println(x + " " + y + " " + z);
+				} // end else if
 			} // end else if 
-		
-			av.setLocalLocation(newPosition);
+			
+			
+			
+			System.out.println(x + " " + y + " " + z);
+			//game.applyForce(x, y, z);
+			po.applyForce(x, y, z, 0, 0, 0);
+			
+			//av.setLocalLocation(newPosition);
 			protClient.sendMoveMessage(av.getWorldLocation());
 		} // end if
 		

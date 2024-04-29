@@ -6,6 +6,11 @@ import tage.input.*;
 import tage.input.action.*;
 import tage.nodeControllers.*;
 import tage.networking.IGameConnection.ProtocolType;
+import tage.physics.PhysicsEngine;
+import tage.physics.PhysicsObject;
+import tage.physics.JBullet.*;
+import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.collision.dispatch.CollisionObject;
 
 import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
@@ -86,6 +91,11 @@ public class MyGame extends VariableFrameRateGame
 	private ObjShape ghostS;
 	private TextureImage ghostT;
 	
+	private PhysicsEngine physicsEngine;
+	private PhysicsObject rect1P, rect2P, planeP;
+	private boolean running = false;
+	private float vals[] = new float[16];
+	
 	public MyGame(String serverAddress, int serverPort, String protocol) {
 		super(); 
 		gm = new GhostManager(this);
@@ -106,7 +116,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadShapes() {
-		// load dolphin shape
+		// load avatar shape
 		avatarS = new ImportedModel("CustomCar.obj");
 		
 		// load visit objects shapes
@@ -135,14 +145,16 @@ public class MyGame extends VariableFrameRateGame
 		// load groundPlane shape
 		groundPlane = new TerrainPlane(1000);	// pixels per axis = 1000x1000
 		
+		// ghost avatar shape
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
 		
+		// cone shape
 		coneS = new ImportedModel("cone.obj");
 	} // end loadShapes
 
 	@Override
 	public void loadTextures() {
-		// dolphin texture
+		// avatar texture
 		avatarTx = new TextureImage("CustomCarUV_wrap.png");
 	
 		// visit objects textures
@@ -167,8 +179,10 @@ public class MyGame extends VariableFrameRateGame
 		groundTx = new TextureImage("rippled_sand.jpg");
 		groundHM = new TextureImage("ground_height_map.png");
 		
+		// ghost avatar texture
 		ghostT = new TextureImage("silver.png");
 		
+		// cone texture
 		coneTx = new TextureImage("Cone.png");
 	} // end loadTextures
 	
@@ -183,9 +197,9 @@ public class MyGame extends VariableFrameRateGame
 	public void buildObjects() {	
 		Matrix4f initialTranslation, initialScale, initialRotation;
 
-		// build dolphin in the center of the window
+		// build avatar in the center of the window
 		avatar = new GameObject(GameObject.root(), avatarS, avatarTx);
-		initialTranslation = (new Matrix4f()).translation(0,0,0);
+		initialTranslation = (new Matrix4f()).translation(0, 0, 0);
 		initialScale = (new Matrix4f()).scaling(1.0f);
 		avatar.setLocalTranslation(initialTranslation);
 		avatar.setLocalScale(initialScale);
@@ -298,14 +312,14 @@ public class MyGame extends VariableFrameRateGame
 		ground.setLocalTranslation(initialTranslation);
 		ground.setLocalScale(initialScale);
 		//ground.setLocalRotation(initialRotation);
+		// enable ground heightMap
 		ground.setHeightMap(groundHM);
-		
 		ground.getRenderStates().setTiling(1);
 		//ground.getRenderStates().setTileFactor(10);
 		
 		// build cone
 		cone = new GameObject(GameObject.root(), coneS, coneTx);
-		initialTranslation = (new Matrix4f()).translation(-2, -1, -2);
+		initialTranslation = (new Matrix4f()).translation(-2, -0.9f, -2);
 		cone.setLocalTranslation(initialTranslation);
 	} // end buildObjects
 
@@ -329,7 +343,7 @@ public class MyGame extends VariableFrameRateGame
 		leftCamera.setV(new Vector3f(0, 1, 0));
 		leftCamera.setN(new Vector3f(0, 0, -1));
 		
-		rightCamera.setLocation(new Vector3f(0, 2, 0));
+		rightCamera.setLocation(new Vector3f(0, 5, 0));
 		rightCamera.setU(new Vector3f(1, 0, 0));
 		rightCamera.setV(new Vector3f(0, 0, -1));
 		rightCamera.setN(new Vector3f(0, -2, 0));
@@ -351,19 +365,62 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void initializeGame() {	
+		// ------------------ Initialize Physics System ------------------
+		float[] gravity = {0f, -5f, 0f};
+		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
+		physicsEngine.setGravity(gravity);
+		
+		
+		// ------------------ Create Physics World ------------------
+		float mass = 1.0f;
+		float upVec[] = {0, 1, 0};
+		double[] tempTransform;
+		float size[] = {1.5f,1.25f,3.125f};
+		
+		// avatar
+		Matrix4f transform = new Matrix4f(avatar.getLocalTranslation());
+		transform.set(3, 2, 0.125f);
+		tempTransform = toDoubleArray(transform.get(vals));
+		rect1P = (engine.getSceneGraph()).addPhysicsBox(mass, tempTransform, size);
+		avatar.setPhysicsObject(rect1P);
+		
+		// ground
+		transform = new Matrix4f(ground.getLocalTranslation());
+		tempTransform = toDoubleArray(transform.get(vals));
+		System.out.println(transform.toString());
+		planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVec, 0.0f);
+		ground.setPhysicsObject(planeP);
+		
+		// cone
+		transform = new Matrix4f(cone.getLocalTranslation());
+		transform.set(3, 1, 0);
+		tempTransform = toDoubleArray(transform.get(vals));
+		size[0] = 1.875f; size[1] =  2f; size[2] = 1.875f;
+		rect2P = (engine.getSceneGraph()).addPhysicsBox(mass, tempTransform, size);
+		cone.setPhysicsObject(rect2P);
+		
+		// enable rendering
+		engine.enableGraphicsWorldRender();
+		engine.enablePhysicsWorldRender();
+				
+		
+		// ------------------ Networking ------------------
 		setupNetworking();
 
+
+		// ------------------ Elapsed Time & Window Size ------------------
 		lastFrameTime = System.currentTimeMillis();
 		currFrameTime = System.currentTimeMillis();
 		elapsTime = 0.0;
 		timeElapsed = 0.0;
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
 		
-		// ------------- inputs -------------
+		
+		// ------------- Inputs -------------
 		im = engine.getInputManager();
 		
-		// ------------- positioning the camera -------------
-		//(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
+		
+		// ------------- Positioning Orbit Camera -------------
 		String gpName = im.getFirstGamepadName();
 		cam = engine.getRenderSystem().getViewport("LEFT").getCamera();
 		
@@ -372,7 +429,8 @@ public class MyGame extends VariableFrameRateGame
 		
 		orbitController = new CameraOrbit3D(leftCamera, avatar, gpName, engine);
 		
-		// ---------------- input manager actions ----------------
+		
+		// ---------------- Input Manager Actions ----------------
 		// IAction actions
 		FwdAction fwdAction = new FwdAction(this, protClient);
 		TurnAction turnAction = new TurnAction(this);
@@ -401,16 +459,19 @@ public class MyGame extends VariableFrameRateGame
 		//im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.DOWN, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		
 		// right viewport camera movement (gamepad)
-		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.POV, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		// xz camera movement disabled for final project
+		//im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.POV, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._4, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._5, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		// right viewport camera movement (keyboard)
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.T, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.G, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.F, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.H, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		// xz camera movement disabled for final project
+		//im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.T, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		//im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.G, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		//im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.F, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		//im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.H, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.V, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.B, rvpMoveAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+
 
 		// ---------------- Node Controllers ----------------
 		rc = new RotationController(engine, new Vector3f(0, 1, 0), 0.0004f);
@@ -462,10 +523,54 @@ public class MyGame extends VariableFrameRateGame
 		// change elapsTime based on if powerUp has been activated or not
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
-		if(powerUpActive)
+		//if(powerUpActive)
 			elapsTime = (currFrameTime - lastFrameTime) / 150.0;
-		else
-			elapsTime = (currFrameTime - lastFrameTime) / 500.0;
+		//else
+		//	elapsTime = (currFrameTime - lastFrameTime) / 500.0;
+		
+		//elapsTime = currFrameTime - lastFrameTime;
+
+		// update physics
+		if(running) {
+			AxisAngle4f aa = new AxisAngle4f();
+			Matrix4f mat = new Matrix4f();
+			Matrix4f mat2 = new Matrix4f().identity();
+			Matrix4f mat3 = new Matrix4f().identity();
+			checkForCollisions();
+			physicsEngine.update((float)elapsTime * 150.0f);
+			for(GameObject go : engine.getSceneGraph().getGameObjects()) {
+				if(go.getPhysicsObject() != null) {					
+					// set translation
+					mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+					mat2.set(3, 0, mat.m30());
+					mat2.set(3, 1, mat.m31());
+					mat2.set(3, 2, mat.m32());
+					go.setLocalTranslation(mat2);
+					
+					// set rotation
+					mat.getRotation(aa);
+					mat3.rotation(aa);
+					go.setLocalRotation(mat3);
+					
+					// update altitude of avatar based on height map
+					if(go != ground) {
+						Vector3f tempLoc = go.getWorldLocation();
+						float height = ground.getHeight(tempLoc.x(), tempLoc.z()) - 0.75f;
+						go.setLocalLocation(new Vector3f(tempLoc.x(), height, tempLoc.z()));
+					} // end if
+				} // end if
+			} // end for
+		} // end if
+		else {
+			// update altitude of avatar based on height map
+			Vector3f tempLoc = avatar.getWorldLocation();
+			float height = ground.getHeight(tempLoc.x(), tempLoc.z()) - 0.75f;
+			avatar.setLocalLocation(new Vector3f(tempLoc.x(), height, tempLoc.z()));
+		} // end else
+		
+		rightCamera.setLocation(new Vector3f(avatar.getWorldLocation().x, avatar.getWorldLocation().y + 5, avatar.getWorldLocation().z));
+		rightCamera.setU(avatar.getWorldRightVector());
+		rightCamera.setV(avatar.getWorldForwardVector());
 	
 		// update the input manager
 		im.update((float)elapsTime);
@@ -497,7 +602,7 @@ public class MyGame extends VariableFrameRateGame
 		// build and set HUD
 		buildSetHUD();
 		
-		// place the camera on the back of the dolphin
+		// place the camera on the back of the avatar
 		loc = avatar.getWorldLocation();
 		fwd = avatar.getWorldForwardVector();
 		up = avatar.getWorldUpVector();
@@ -506,11 +611,6 @@ public class MyGame extends VariableFrameRateGame
 		cam.setV(up);
 		cam.setN(fwd);
 		cam.setLocation(loc.add(up.mul(1.3f)).add(fwd.mul(-2.5f)));
-		
-		// update altitude of avatar based on height map
-		Vector3f tempLoc = avatar.getWorldLocation();
-		float height = ground.getHeight(tempLoc.x(), tempLoc.z());
-		avatar.setLocalLocation(new Vector3f(tempLoc.x(), height, tempLoc.z()));
 		
 		orbitController.updateCameraPosition();
 		
@@ -580,7 +680,7 @@ public class MyGame extends VariableFrameRateGame
 		float avY = avatar.getWorldLocation().y();
 		float avZ = avatar.getWorldLocation().z();
 		String dispStrAvLoc = "X: " + avX + " Y: " + avY + " Z: " + avZ;
-		Vector3f hudAvLocColor = new Vector3f(1,1,1);
+		Vector3f hudAvLocColor = new Vector3f(0,0,0);
 		(engine.getHUDmanager()).setHUD1(dispStrAvLoc, hudAvLocColor, (int)(rightVp.getActualLeft() + 3), (int)(leftVp.getActualHeight() * 0.015));
 				
 		// score, time elapsed hud (left viewport)
@@ -604,6 +704,10 @@ public class MyGame extends VariableFrameRateGame
 	{	
 		switch(e.getKeyCode())
 		{
+			case KeyEvent.VK_SPACE:
+				running = !running;
+				System.out.println("Physics: " + running);
+				break;
 			/*
 			case KeyEvent.VK_C:
 				counter++;
@@ -704,6 +808,10 @@ public class MyGame extends VariableFrameRateGame
 		return engine;
 	} // end getEngine
 	
+	public PhysicsEngine getPhysicsEngine() {
+		return physicsEngine;
+	} // end getPhysicsEngine
+	
 	public void setIsConnected(boolean isConnected) {
 		this.isClientConnected = isConnected;
 	} // end setIsConnected
@@ -731,7 +839,74 @@ public class MyGame extends VariableFrameRateGame
 	public Camera getRightVpCam() {
 		return engine.getRenderSystem().getViewport("RIGHT").getCamera();
 	} // end getRightVpCam
+	
+	// ------------- UTILITY FUNCTIONS used by physics -------------
+	private float[] toFloatArray(double[] arr) {
+		if(arr == null) {
+			return null;
+		} // end if
+		
+		int n = arr.length;
+		float[] ret = new float[n];
+		
+		for(int i = 0; i < n; i++) {
+			ret[i] = (float)arr[i];
+		} // end for
+		return ret;
+	} // end toFloatArray
+	
+	private double[] toDoubleArray(float[] arr) {
+		if(arr == null) {
+			return null;
+		} // end if
+		
+		int n = arr.length;
+		double[] ret = new double[n];
+		
+		for(int i = 0; i < n; i++) {
+			ret[i] = (double)arr[i];
+		} // end for
+		return ret;
+	} // end toDoubleArray
+	
+	private void checkForCollisions() {
+		com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
+		com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
+		com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
+		com.bulletphysics.dynamics.RigidBody object1, object2;
+		com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
+		
+		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
+		dispatcher = dynamicsWorld.getDispatcher();
+		int manifoldCount = dispatcher.getNumManifolds();
+		
+		for(int i = 0; i < manifoldCount; i++) {
+			manifold = dispatcher.getManifoldByIndexInternal(i);
+			object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
+			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
+			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
+			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
+			
+			for(int j = 0; j < manifold.getNumContacts(); j++) {
+				contactPoint = manifold.getContactPoint(j);
+				if(contactPoint.getDistance() < 0.0f) {
+					System.out.println("---- hit between " + obj1 + " and " + obj2 + " ----");
+					break;
+				} // end if
+			} // end for
+		} // end for
+	} // end checkForCollisions
+	
+	public void applyForce(float fx, float fy, float fz) {
+		rect1P.applyForce(fx, fy, fz, 0, 0, 0);
+		avatar.setPhysicsObject(rect1P);
+	} // end applyForce
 
+	public void setVelocity(float x, float y, float z) {
+		float[] vals = {x, y, z};
+		rect1P.setLinearVelocity(vals);
+		avatar.setPhysicsObject(rect1P);
+	} // end setVelocity
 
 	private class SendCloseConnectionPacketAction extends AbstractInputAction {
 		// for leaving the game... need to attach to an input device

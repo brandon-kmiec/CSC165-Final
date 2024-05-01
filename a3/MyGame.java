@@ -9,6 +9,7 @@ import tage.networking.IGameConnection.ProtocolType;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 import tage.physics.JBullet.*;
+import tage.audio.*;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.collision.dispatch.CollisionObject;
 
@@ -76,25 +77,36 @@ public class MyGame extends VariableFrameRateGame
 	
 	private Viewport leftVp, rightVp;
 	
+	// nodeControllers
 	private NodeController rc;
 	private NodeController tcSphere, tcCube, tcTorus, tcPlane;
 	
+	// skybox
 	private int fluffyClouds;
 	
 	private GhostManager gm;
+	
+	// networking
 	private String serverAddress;
 	private int serverPort;
 	private ProtocolType serverProtocol;
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false;
 	
+	// ghost
 	private ObjShape ghostS;
 	private TextureImage ghostT;
 	
+	// physics
 	private PhysicsEngine physicsEngine;
 	private PhysicsObject rect1P, rect2P, planeP;
 	private boolean running = false;
 	private float vals[] = new float[16];
+	
+	// audio
+	private IAudioManager audioMgr;
+	private Sound outsideSound, carSound;
+	
 	
 	public MyGame(String serverAddress, int serverPort, String protocol) {
 		super(); 
@@ -192,6 +204,29 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getSceneGraph()).setActiveSkyBoxTexture(fluffyClouds);
 		(engine.getSceneGraph()).setSkyBoxEnabled(true);
 	} // end loadSkyBoxes
+	
+	@Override
+	public void loadSounds() {
+		AudioResource resource1, resource2;
+		audioMgr = engine.getAudioManager();
+		
+		resource1 = audioMgr.createAudioResource("assets/sounds/car_engine.wav", AudioResourceType.AUDIO_SAMPLE);
+		resource2 = audioMgr.createAudioResource("assets/sounds/outside.wav", AudioResourceType.AUDIO_SAMPLE);
+		
+		carSound = new Sound(resource1, SoundType.SOUND_EFFECT, 100, true);
+		outsideSound = new Sound(resource2, SoundType.SOUND_EFFECT, 100, true);
+		
+		carSound.initialize(audioMgr);
+		outsideSound.initialize(audioMgr);
+		
+		carSound.setMaxDistance(10.0f);
+		carSound.setMinDistance(0.5f);
+		carSound.setRollOff(5.0f);
+		
+		outsideSound.setMaxDistance(50.0f);
+		outsideSound.setMinDistance(0.5f);
+		outsideSound.setRollOff(5.0f);
+	} // end loadSounds
 
 	@Override
 	public void buildObjects() {	
@@ -494,7 +529,24 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getSceneGraph()).addNodeController(tcTorus);
 		
 		rc.enable();
+		
+		
+		// ---------------- Sound ----------------
+		// set location
+		carSound.setLocation(cone.getWorldLocation());
+		//outsideSound.setLocation(cone.getWorldLocation());
+		
+		setEarParameters();
+		
+		// play sound
+		carSound.play();
+		//outsideSound.play();
 	} // end initializeGame
+	
+	public void setEarParameters() {
+		audioMgr.getEar().setLocation(avatar.getWorldLocation());
+		audioMgr.getEar().setOrientation(cam.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
+	} // end setEarParameters
 	
 	private void setupNetworking() {
 		isClientConnected = false;
@@ -615,6 +667,11 @@ public class MyGame extends VariableFrameRateGame
 		orbitController.updateCameraPosition();
 		
 		processNetworking((float)elapsTime);
+		
+		// update sound
+		carSound.setLocation(cone.getWorldLocation());
+		//outsideSound.setLocation(cone.getWorldLocation());
+		setEarParameters();
 	} // end update
 	
 	protected void processNetworking(float elapsTime) {

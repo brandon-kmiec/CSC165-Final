@@ -33,6 +33,11 @@ public class BttnAction extends AbstractInputAction {
 		if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Button._0 ||
 			e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key.O)
 			game.toggleXYZAxis();
+			
+		// toggle avatar light
+		if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Button._3 ||
+			e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Key._3)
+			game.toggleAvatarLight();
 
 	} // end performAction
 } // end BttnAction Class

@@ -11,7 +11,7 @@ import org.joml.*;
 */
 public class FwdAction extends AbstractInputAction {
 	private MyGame game;
-	private GameObject av;
+	private GameObject av, fw, bw;
 	private Vector3f oldPosition, newPosition;
 	private Vector3f fwdDirection;
 	private Vector3f bkwDirection;
@@ -44,6 +44,8 @@ public class FwdAction extends AbstractInputAction {
 				return; // deadzone
 
 			av = game.getAvatar();
+			fw = game.getFrontWheel();
+			bw = game.getBackWheel();
 			oldPosition = av.getWorldLocation();
 			fwdDirection = av.getWorldForwardVector();
 			
@@ -78,9 +80,9 @@ public class FwdAction extends AbstractInputAction {
 				if(keyValue > 0) {
 					newPosition = oldPosition.add(fwdDirection.mul(-time));
 					
-					x = (fwdDirection.x()) * time * -1000;
-					y = (fwdDirection.y()) * time * -1000;
-					z = (fwdDirection.z()) * time * -1000;
+					x = (bkwDirection.x()) * time * 10;
+					y = (bkwDirection.y()) * time * 10;
+					z = (bkwDirection.z()) * time * 10;
 					System.out.println(x + " " + y + " " + z);
 				} // end if
 				else if(keyValue < 0) {
@@ -93,7 +95,14 @@ public class FwdAction extends AbstractInputAction {
 				} // end else if
 			} // end else if 
 			
-			
+			if(x > 0 || y > 0 || z > 0) {
+				//fw.setLocalRotation(fw.getLocalRotation().rotation(-(float)time, fw.getWorldRightVector()));
+				fw.setLocalRotation((new Matrix4f()).rotation((float)time, 1, 0, 0));
+				//fw.localPitch(new Matrix4f(), time, 1);
+				bw.setLocalRotation((new Matrix4f()).rotation((float)time, 1, 0, 0));
+				//bw.localPitch(new Matrix4f(), time, 1);
+				//bw.setLocalRotation(bw.getLocalRotation().rotation(-(float)time, bw.getWorldRightVector()));
+			} // end if
 			
 			System.out.println(x + " " + y + " " + z);
 			//game.applyForce(x, y, z);

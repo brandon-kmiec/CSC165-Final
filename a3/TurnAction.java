@@ -14,11 +14,13 @@ public class TurnAction extends AbstractInputAction {
 	private GameObject av;
 	private Vector4f oldUp;
 	private Matrix4f oldRotation, newRotation, rotAroundAvatarUp;
+	private ProtocolClient protClient;
 	private PhysicsObject po;
 	
 	/**	creates a TurnAction with MyGame as specified */
-	public TurnAction(MyGame g) {
+	public TurnAction(MyGame g, ProtocolClient p) {
 		game = g;
+		protClient = p;
 		
 		po = game.getAvatar().getPhysicsObject();
 	} // end TurnAction Constructor
@@ -64,16 +66,18 @@ public class TurnAction extends AbstractInputAction {
 			} // end if
 			else if(e.getComponent().getIdentifier() == net.java.games.input.Component.Identifier.Axis.X) {
 				if(keyValue > 0) {
-					y = time * 5;
+					y = time * -5;
 					//av.globalYaw(new Matrix4f(), time, 1);
 				} // end if
 				else if(keyValue < 0) {
-					y = time * -5;
+					y = time * 5;
 					//av.globalYaw(new Matrix4f(), time, 0);
 				} // end else if
 			} // end else if
 
 			po.applyTorque(0, y, 0);
+			
+			protClient.sendTurnMessage(av.getLocalRotation());
 		} // end if
 	} // end performAction
 } // end TurnAction Class

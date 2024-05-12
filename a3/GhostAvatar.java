@@ -26,6 +26,10 @@ public class GhostAvatar extends GameObject {
 		return getWorldLocation();
 	} // end getPosition
 	
+	public Matrix4f getLocalRotation() {
+		return getLocalRotation();
+	} // end getLocalRotation
+	
 	public void setId(UUID id) {
 		this.id = id;
 	} // end setId
@@ -33,4 +37,8 @@ public class GhostAvatar extends GameObject {
 	public void setPosition(Vector3f pos) {
 		setLocalLocation(pos);
 	} // end setPosition
+	
+	public void setRotation(Matrix4f rot) {
+		setLocalRotation(rot);
+	} // end setLocalRotation
 } // end GhostAvatar class

@@ -43,6 +43,8 @@ public class DisplaySettingsDialog extends JDialog implements ActionListener
 
   	private JRadioButton windowedModeRadioButton;
   	private JRadioButton fullScreenModeRadioButton;
+	private static JRadioButton redAvatar;
+	private static JRadioButton blueAvatar;
   	private JComboBox displayModeComboBox ;
   	private JLabel currentResolutionLabel;
 
@@ -59,7 +61,7 @@ public class DisplaySettingsDialog extends JDialog implements ActionListener
 	public DisplaySettingsDialog (GraphicsDevice theDevice)
 	{
 		setTitle("Choose Display Settings");
-		setSize(450, 200);
+		setSize(500, 200);
 		setLocation (200,200);
 		setResizable(true);
 		device = theDevice;
@@ -109,6 +111,24 @@ public class DisplaySettingsDialog extends JDialog implements ActionListener
 		screenPanel.add(screenButtonBox);
 
 		this.add(screenPanel, "West");
+
+		//add a radio button group for selecting the avatar
+		JPanel avatarPanel = new JPanel();
+		avatarPanel.setBorder(new TitledBorder("Avatar:  "));
+		Box avatarButtonBox = new Box(BoxLayout.Y_AXIS);
+		
+		blueAvatar = new JRadioButton("Blue", true);
+		redAvatar = new JRadioButton("Red", false);
+		
+		ButtonGroup avatarButtonGroup = new ButtonGroup();
+		avatarButtonGroup.add(blueAvatar);
+		avatarButtonGroup.add(redAvatar);
+		avatarButtonBox.add(blueAvatar);
+		avatarButtonBox.add(redAvatar);
+		
+		avatarPanel.add(avatarButtonBox);
+		
+		this.add(avatarPanel);
 
 		//add a rightside panel containing a drop-down list of available display modes
 		JPanel displayModesPanel = new JPanel (new BorderLayout());
@@ -333,4 +353,17 @@ public class DisplaySettingsDialog extends JDialog implements ActionListener
 
       		setVisible(false);
   	}
+	
+	
+	/**
+	 *	Returns avatar to use in MyGame.
+	 */
+	public static String getAvatar() {
+		if(blueAvatar.isSelected())
+			return "blue";
+		else if(redAvatar.isSelected())
+			return "red";
+		
+		return "default";
+	} // end getAvatar
 }
